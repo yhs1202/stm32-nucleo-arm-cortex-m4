@@ -1,0 +1,12 @@
+# IDE/OS
+.vscode/
+.nvim/
+
+# Build output
+Debug/
+Release/
+*.o
+*.elf
+*.map
+*.bin
+*.hex
