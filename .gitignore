@@ -10,3 +10,11 @@ Release/
 *.map
 *.bin
 *.hex
+
+# IDE specific files
+.settings/
+Drivers/
+.cproject
+.mxproject
+.project
+*launch
