@@ -1,0 +1,153 @@
+/*
+ * fnd.c
+ *
+ *  Created on: Dec 12, 2025
+ *      Author: Hoseung Yoon
+ */
+
+#include "fnd.h"
+
+uint16_t fndNum; // Global Variable
+volatile uint8_t dpBlink = 0;
+
+FND_TypeDef fndDigitCom[4] = {
+		{FND_D1_GPIO, FND_D1_PIN},
+		{FND_D2_GPIO, FND_D2_PIN},
+		{FND_D3_GPIO, FND_D3_PIN},
+		{FND_D4_GPIO, FND_D4_PIN}
+};
+
+FND_TypeDef fndPin[8] = {
+		{FND_A_GPIO, FND_A_PIN},
+		{FND_B_GPIO, FND_B_PIN},
+		{FND_C_GPIO, FND_C_PIN},
+		{FND_D_GPIO, FND_D_PIN},
+		{FND_E_GPIO, FND_E_PIN},
+		{FND_F_GPIO, FND_F_PIN},
+		{FND_G_GPIO, FND_G_PIN},
+		{FND_DP_GPIO, FND_DP_PIN}
+};
+
+void FND_ISR()
+{
+	FND_DispNum();
+}
+void FND_SetNum(uint16_t num)
+{
+	fndNum = num;
+}
+
+void FND_DispDigit(uint16_t digit, uint8_t dpOn)
+{
+	const uint8_t segFont[10] = {
+			0x3f,	// 0
+			0x06,	// 1
+			0x5b,	// 2
+			0x4f,	// 3
+			0x66,	// 4
+			0x6d,	// 5
+			0x7d,	// 6
+			0x07,	// 7
+			0x7f,	// 8
+			0x6f	// 9
+	};
+	uint8_t font = segFont[digit % 10];
+	if (dpOn) font |= 0x80;
+
+	for (int i = 0; i < 8; i++) {
+		if (font & (1<<i))
+			HAL_GPIO_WritePin(fndPin[i].GPIOx, fndPin[i].GPIO_Pin, RESET);
+		else
+			HAL_GPIO_WritePin(fndPin[i].GPIOx, fndPin[i].GPIO_Pin, SET);
+	}
+}
+
+void FND_AllOff()
+{
+	HAL_GPIO_WritePin(FND_D1_GPIO, FND_D1_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(FND_D2_GPIO, FND_D2_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(FND_D3_GPIO, FND_D3_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(FND_D4_GPIO, FND_D4_PIN, GPIO_PIN_RESET);
+}
+
+void FND_DigitOn(int digit)
+{
+	FND_AllOff();
+	switch (digit) {
+		case DIGIT_1000:
+			HAL_GPIO_WritePin(FND_D1_GPIO, FND_D1_PIN, GPIO_PIN_SET);
+			break;
+		case DIGIT_100:
+			HAL_GPIO_WritePin(FND_D2_GPIO, FND_D2_PIN, GPIO_PIN_SET);
+			break;
+		case DIGIT_10:
+			HAL_GPIO_WritePin(FND_D3_GPIO, FND_D3_PIN, GPIO_PIN_SET);
+			break;
+		case DIGIT_1:
+			HAL_GPIO_WritePin(FND_D4_GPIO, FND_D4_PIN, GPIO_PIN_SET);
+			break;
+	}
+}
+
+// Interrupt Version
+void FND_DispNum()
+{
+	static int digit = 0;
+	digit = (digit + 1) % 4;
+
+	switch (digit) {
+		case DIGIT_1000:
+			// digit_1000
+			FND_AllOff();
+			FND_DispDigit(fndNum / 1000 % 10, 0);
+			FND_DigitOn(DIGIT_1000);
+			break;
+		case DIGIT_100:
+			// digit_100
+			FND_AllOff();
+			FND_DispDigit(fndNum / 100 % 10, dpBlink);
+			FND_DigitOn(DIGIT_100);
+			break;
+		case DIGIT_10:
+			// digit_10
+			FND_AllOff();
+			FND_DispDigit(fndNum / 10 % 10, 0);
+			FND_DigitOn(DIGIT_10);
+			break;
+		case DIGIT_1:
+			// digit_1
+			FND_AllOff();
+			FND_DispDigit(fndNum % 10, 0);
+			FND_DigitOn(DIGIT_1);
+			break;
+	}
+}
+
+
+/*
+void FND_DispNumber(uint16_t number, uint32_t delay)
+{
+	for (int i = 0; i < delay; i++) {
+		FND_AllOff();
+		FND_DispDigit(number % 10);
+		FND_DigitOn(DIGIT_1);
+		HAL_Delay(1);
+
+		FND_AllOff();
+		FND_DispDigit((number / 10) % 10);
+		FND_DigitOn(DIGIT_10);
+		HAL_Delay(1);
+
+		FND_AllOff();
+		FND_DispDigit((number / 100) % 10);
+		FND_DigitOn(DIGIT_100);
+		HAL_Delay(1);
+
+		FND_AllOff();
+		FND_DispDigit((number / 1000) % 10);
+		FND_DigitOn(DIGIT_1000);
+		HAL_Delay(1);
+	}
+}
+*/
+
