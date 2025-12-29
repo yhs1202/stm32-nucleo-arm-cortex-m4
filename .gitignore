@@ -17,4 +17,7 @@ Drivers/
 .cproject
 .mxproject
 .project
-*launch
+*.launch
+
+# RTOS files
+Middlewares/
